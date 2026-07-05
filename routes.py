@@ -505,12 +505,15 @@ def epi_cox():
 def epi_hl():
     """Hosmer-Lemeshow from a saved model applied to the test set."""
     sid = require_session()
-    b = request.get_json(force=True)
-    mdl = _load_model(b["model"])
-    if mdl["task"] != "binary":
-        return jsonify({"error": "Hosmer-Lemeshow needs a binary model."}), 400
     if not sid:
         return jsonify({"error": "No active session."}), 400
+    b = request.get_json(force=True)
+    try:
+        mdl = _load_model(b["model"])
+    except Exception as e:
+        return jsonify({"error": f"Could not load model: {e}"}), 400
+    if mdl["task"] != "binary":
+        return jsonify({"error": "Hosmer-Lemeshow needs a binary model."}), 400
     df = pd.read_csv(store.session_path(sid, "test.csv"))
     y, _ = ml.encode_outcome(df[mdl["outcome"]], "binary")
     mask = ~pd.isna(y)

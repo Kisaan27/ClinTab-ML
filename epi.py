@@ -51,7 +51,7 @@ def two_by_two(a, b, c, d, conf=0.95):
     se_log_rr = np.sqrt((1 / a) - 1 / (a + b) + (1 / c) - 1 / (c + d))
     rr_lo, rr_hi = _z_ci(np.log(rr), se_log_rr, conf)
 
-    # chi-square test on the (original) table
+    # chi-square test on the (corrected) table
     table = np.array([[a, b], [c, d]])
     chi2, p, _, _ = stats.chi2_contingency(table, correction=True)
 
