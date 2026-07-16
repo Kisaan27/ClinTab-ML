@@ -14,6 +14,39 @@ and returned as a PNG (with PDF / CSV export) — no SVG, no canvas, no Chart.js
 
 ---
 
+## Statement of need
+
+Clinical researchers working with registry data (TQIP, NSQIP, single-center
+cohorts) typically stitch together an ML study from several disconnected
+tools: a notebook for data profiling, hand-written scikit-learn code for
+model comparison, a separate online calculator for odds ratios and NNT, and
+another package entirely for Kaplan-Meier or Cox survival analysis. Each
+hand-off is a place for the leakage-free validation and correction
+conventions clinical work depends on (e.g. scoring hyperparameter search on
+a held-out validation set rather than the training fold, or applying a
+Haldane-Anscombe correction to a 2x2 table with a zero cell) to quietly get
+skipped. Several of those disconnected tools (online calculators, cloud
+AutoML platforms) also mean patient-derived data leaving the researcher's
+machine and landing on a third party's server, which is a real problem for
+registry data that is rarely fully de-identified.
+
+ClinTAB-ML exists to remove those hand-offs. It is a single local tool that
+takes a research team from a raw CSV through column profiling, model
+training and tuning across 15 algorithms, full diagnostic evaluation
+(ROC/PR/calibration/Hosmer-Lemeshow), restricted cubic splines, and the
+standard clinical-epidemiology calculators, all with the conventions
+clinical prediction-model work expects built in by default rather than
+left to whoever wrote that day's notebook, and all running on the
+researcher's own machine so the data never has to leave it (see "Runs
+entirely on your machine" below). It targets researchers who want to move
+from cohort to trained, evaluated model without switching tools, sending
+data off-machine, or re-deriving the same statistical corrections each
+time, and who would otherwise be choosing between general-purpose,
+cloud-hosted AutoML tools (which don't know what a Hosmer-Lemeshow test is,
+and don't keep the data local) and writing the whole pipeline by hand.
+
+---
+
 ## Quick start (terminal)
 
 ```bash
@@ -235,6 +268,22 @@ The original `src/` pipeline (`class_tqip.py` / `select_features.py`) only
 covered the old classification path and has been **replaced** by
 `clintab_cli.py`, which exposes the full feature set on top of the same shared
 modules as the web app. Recover the old files from git history if ever needed.
+
+---
+
+## Contributing & support
+
+Bug reports and feature requests are welcome via [GitHub
+Issues](https://github.com/Applied-Clinical-AI-Initiative/ClinTab-ML/issues) —
+use the bug report or feature request template, whichever fits. See
+`CONTRIBUTING.md` for dev setup, how to run the test suite, and branch/PR
+conventions before opening a pull request. This project follows the
+`CODE_OF_CONDUCT.md` in this repo; please report any violations as described
+there.
+
+For questions about using the app rather than a bug or a code change, open a
+GitHub Discussion or Issue rather than emailing maintainers directly, so the
+answer is visible to future users with the same question.
 
 ---
 
