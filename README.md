@@ -253,8 +253,12 @@ Regressor.
   numerics inside each model pipeline. Integer-coded categoricals are left
   numeric; if you want them one-hot encoded, cast them to string first or extend
   `ml.build_preprocessor` to read `meta['coltypes']`.
-- **Grid search** uses a single train/val split (`PredefinedSplit`), per the
-  "validation set only" requirement — not k-fold CV.
+- **Grid search** defaults to a single train/val split (`PredefinedSplit`),
+  per the "validation set only" requirement. On small datasets that can make
+  hyperparameter selection noisy; pass `cv_folds` (`--cv-folds` on the CLI)
+  to use k-fold CV on the training set instead. Either way, the validation
+  set is never touched by the search itself, only by the metrics reported
+  afterward.
 - **Spline CI** is the GLM linear-predictor (log-odds) confidence band.
 - Authentication / multi-user isolation is **not** implemented — this is a
   local / trusted-server research tool. Add a reverse proxy + auth before
