@@ -236,6 +236,10 @@ def train_config():
         "grid_search": bool(body.get("grid_search", True)),
         "smote": bool(body.get("smote", meta.get("smote_pref", False))),
         "threshold": float(body.get("threshold", 0.5)),
+        # k-fold CV on the training set for grid search, instead of the
+        # single validation-set split -- helps on small datasets. Leave unset
+        # (None) to keep the default validation-set-only behavior.
+        "cv_folds": int(body["cv_folds"]) if body.get("cv_folds") else None,
     }
     meta["train_config"] = cfg
     store.save_meta(sid, meta)
@@ -283,7 +287,7 @@ def train_stream():
                     name, df_train, df_val, outcome, feat_cols, task,
                     param_grid=grid, scoring=cfg["scoring"],
                     use_smote=cfg["smote"], do_grid_search=cfg["grid_search"],
-                    coltypes=meta.get("coltypes", {}))
+                    coltypes=meta.get("coltypes", {}), cv_folds=cfg["cv_folds"])
 
                 vmetrics, vcoords = ml.evaluate(pipe, df_val, outcome, feat_cols,
                                                 task, threshold=cfg["threshold"])

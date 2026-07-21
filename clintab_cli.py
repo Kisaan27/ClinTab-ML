@@ -128,7 +128,7 @@ def cmd_train(a):
         pipe, info = ml.train_one_model(name, tr, va, a.outcome, feat_cols, task,
                                         scoring=a.scoring, use_smote=a.smote,
                                         do_grid_search=not a.no_grid,
-                                        coltypes=coltypes)
+                                        coltypes=coltypes, cv_folds=a.cv_folds)
         vmetrics, _ = ml.evaluate(pipe, va, a.outcome, feat_cols, task, threshold=a.threshold)
         ts = store.timestamp()
         base = f"{name}_{a.outcome}_{ts}".replace(" ", "_")
@@ -249,6 +249,9 @@ def build_parser():
     t.add_argument("--smote", action="store_true")
     t.add_argument("--stratify", action="store_true", help="stratify split on the outcome")
     t.add_argument("--no-grid", action="store_true", help="skip hyperparameter tuning")
+    t.add_argument("--cv-folds", type=int, default=None,
+                    help="k-fold CV on the training set for grid search, instead of "
+                         "the single validation-set split (useful on small datasets)")
     t.add_argument("--test", action="store_true", help="also report held-out test metrics")
     t.set_defaults(func=cmd_train)
 

@@ -83,6 +83,38 @@ def test_train_one_model_and_evaluate_binary():
     assert set(coords.keys()) == {"roc", "pr", "confusion", "calibration"}
 
 
+def test_train_one_model_grid_search_default_uses_val_split_not_cv():
+    df = _binary_frame(n=160)
+    train, val = df.iloc[:120], df.iloc[120:]
+    feat_cols = ["age", "sex"]
+    grid = {"clf__C": [0.1, 1.0]}
+
+    pipe, info = ml.train_one_model(
+        "LogisticRegression", train, val, "outcome", feat_cols, "binary",
+        param_grid=grid, do_grid_search=True)
+
+    assert info["cv_folds"] is None
+    assert info["best_params"] != "default"
+    metrics, _ = ml.evaluate(pipe, val, "outcome", feat_cols, "binary")
+    assert 0.0 <= metrics["AUROC"] <= 1.0
+
+
+def test_train_one_model_grid_search_with_cv_folds_uses_kfold_on_train_only():
+    df = _binary_frame(n=160)
+    train, val = df.iloc[:120], df.iloc[120:]
+    feat_cols = ["age", "sex"]
+    grid = {"clf__C": [0.1, 1.0]}
+
+    pipe, info = ml.train_one_model(
+        "LogisticRegression", train, val, "outcome", feat_cols, "binary",
+        param_grid=grid, do_grid_search=True, cv_folds=3)
+
+    assert info["cv_folds"] == 3
+    assert info["best_params"] != "default"
+    metrics, _ = ml.evaluate(pipe, val, "outcome", feat_cols, "binary")
+    assert 0.0 <= metrics["AUROC"] <= 1.0
+
+
 def test_binary_metrics_perfect_separation():
     y_true = np.array([0, 0, 0, 1, 1, 1])
     y_score = np.array([0.1, 0.2, 0.3, 0.7, 0.8, 0.9])

@@ -212,11 +212,21 @@ def make_scoring(metric, task):
 # ============================================================================
 def train_one_model(name, df_train, df_val, outcome, feat_cols, task,
                     param_grid=None, scoring="roc", use_smote=False,
-                    do_grid_search=True, coltypes=None):
-    """Fit one model. Grid search is evaluated on the VALIDATION set only
-    (via PredefinedSplit), then the best params are refit on train+val.
-    coltypes: optional {col: type}, passed to build_preprocessor so
-    integer-coded categoricals get one-hot encoded instead of scaled.
+                    do_grid_search=True, coltypes=None, cv_folds=None):
+    """Fit one model. By default, grid search is evaluated on the VALIDATION
+    set only (via PredefinedSplit), then the best params are refit on the
+    training set alone. coltypes: optional {col: type}, passed to
+    build_preprocessor so integer-coded categoricals get one-hot encoded
+    instead of scaled.
+
+    cv_folds: if set (e.g. 5), grid search instead uses k-fold CV within the
+    TRAINING set only, refitting on the full training set with the winning
+    params. Useful on small datasets, where scoring candidates against a
+    single validation split makes hyperparameter selection noisy. Either
+    way, df_val is never touched by the search itself, only by the
+    evaluate() call afterwards -- so the validation metrics stay leakage-free
+    regardless of which path is used.
+
     Returns (fitted_pipeline, info_dict).
     """
     cfg = model_catalogue(task)[name]
@@ -244,7 +254,14 @@ def train_one_model(name, df_train, df_val, outcome, feat_cols, task,
     score = make_scoring(scoring, task)
     best_params = "default"
 
-    if do_grid_search and grid:
+    if do_grid_search and grid and cv_folds:
+        # k-fold CV within the TRAINING set only -- df_val is never part of
+        # the search, so it stays a clean held-out set for evaluate() later.
+        gs = GridSearchCV(pipe, grid, scoring=score, cv=cv_folds, n_jobs=-1, refit=True)
+        gs.fit(Xtr, ytr)
+        best_params = gs.best_params_
+        fitted = gs.best_estimator_
+    elif do_grid_search and grid:
         # Grid search scores each candidate on the VALIDATION set only
         # (PredefinedSplit: fold -1 = train, fold 0 = val). refit=False so the
         # winning params are then re-fit on the TRAINING set alone -- this keeps
@@ -265,7 +282,8 @@ def train_one_model(name, df_train, df_val, outcome, feat_cols, task,
     info = {"name": name, "best_params": _jsonable(best_params),
             "classes": classes, "task": task,
             "n_train": int(len(Xtr)), "n_val": int(len(Xva)),
-            "smote": bool(use_smote and task != "continuous" and HAS_SMOTE)}
+            "smote": bool(use_smote and task != "continuous" and HAS_SMOTE),
+            "cv_folds": int(cv_folds) if (do_grid_search and grid and cv_folds) else None}
     return fitted, info
 
 
